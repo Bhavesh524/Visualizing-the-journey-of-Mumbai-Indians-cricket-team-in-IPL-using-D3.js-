@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/DB381AA9-BB12-394D-B050-21A212A797A0/main.js" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://gc.kis.v2.scr.kaspersky-labs.com/77798AB8-F07B-8C44-91AB-0C4539FD5241/abn/main.css"/><style> /* set the CSS */
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 2px;
+}
+
+/* Style the dots by assigning a fill and stroke */
+.dot {
+    fill: #ffab00;
+    stroke: #fff;
+}
+
+<!--.tooltip{-->
+      <!--position      : absolute;-->
+      <!--text-align    : center;-->
+      <!--max-width     : 100px;-->
+      <!--max-height    : 150px;-->
+      <!--padding       : 8px;-->
+      <!--border        : none;-->
+      <!--border-radius : 8px;-->
+      <!--margin-top    : -30px;-->
+      <!--font          : 10px sans-serif;-->
+      <!--background    : black;-->
+      <!--color         : white;-->
+      <!--pointer-events: none;-->
+  <!--}-->
+
+
+</style>
+<body>
+
+<!-- load the d3.js library -->
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+
+// set the dimensions and margins of the graph
+var margin = {top: 20, right: 20, bottom: 30, left: 50},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+// parse the date / time
+var parseTime = d3.timeParse("%d-%b-%y");
+
+// set the ranges
+var x = d3.scaleLinear().range([0, width]);
+var y = d3.scaleLinear().range([height, 0]);
+
+// define the line
+var valueline = d3.line()
+    .x(function(d) { return x(d.Year); })
+    .y(function(d) { return y(d.Position); });
+
+// append the svg obgect to the body of the page
+// appends a 'group' element to 'svg'
+// moves the 'group' element to the top left margin
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+/* Data in strings like it would be if imported from a csv */
+ var record_data = []
+
+    d3.csv("data/MI_record.csv", function(error, recorddata) {
+    //print(parkdata)
+    console.log(recorddata)
+    var obj = new Array();
+    recorddata.forEach(function(recorddata1) {
+        var obj = {};
+        obj.Year = recorddata1.Year;
+        obj.Total = recorddata1.Total;
+        obj.Wins = recorddata1.Wins;
+        obj.Losses = recorddata1.Losses;
+        obj.NR = recorddata1.NR;
+        obj.percent_win = recorddata1.percent_win;
+        obj.Position = recorddata1.Position;
+        record_data.push(obj);
+          })
+console.log(record_data)
+  // Scale the range of the data
+  x.domain(d3.extent(record_data, function(d) { return d.Year; }));
+  y.domain([d3.max(record_data, function(d) { return d.Position; }), 1]);
+
+  // Add the valueline path.
+  svg.append("path")
+      .data([record_data])
+      .attr("class", "line")
+      .attr("d", valueline)
+      .attr("fill", "#cce5df")
+      .attr("stroke", "#69b3a2")
+      .attr("stroke-width", 2.5)
+      <!--.attr("d", d3.area()-->
+        <!--.x(function(d) { return x(d.Year) })-->
+        <!--.y(function(d) { return y(d.Position) })-->
+        <!--)-->
+
+
+  // Add the X Axis
+  svg.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+
+ <!--// tooltips-->
+    <!--var div = d3.select('#container').append('div')-->
+        <!--.attr('class', 'tooltip')-->
+        <!--.style('display', 'none')-->
+        <!--.style("fill", "orangered");-->
+
+  // Add the Y Axis
+  svg.append("g")
+      .call(d3.axisLeft(y));
+
+       var focus = svg.append("g")
+        .attr("class", "focus")
+        .style("display", "none");
+
+    bisectDate = d3.bisector(function(d) { return d.Year; }).left;
+
+      svg.selectAll("circle").data(record_data).enter()
+       .data(record_data)
+       .append("circle")
+        .attr("cx", function(d) { return x(d.Year); })
+        .attr("cy", function(d) { return y(d.Position); })
+        .attr("r", function(d, i) { return 5; })
+        .style("fill", "#fcb0b5")
+          .on("mouseover", function() { focus.style("display", null); })
+        .on("mouseout", function() { focus.style("display", "none"); })
+        .on("mousemove", mousemove);
+    function mousemove() {
+      var x0 = x.invert(d3.mouse(this)[0]),
+          i = bisectDate(record_data, x0, 1),
+          d0 = data[i - 1],
+          d1 = data[i],
+          d = x0 - d0.year > d1.year - x0 ? d1 : d0;
+      focus.attr("transform", "translate(" + x(d.Year) + "," + y(d.Position) + ")");
+      focus.select("text").text(function() { return d.Position; });
+      focus.select(".x-hover-line").attr("y2", height - y(d.Position));
+      focus.select(".y-hover-line").attr("x2", width + width);
+    }
+
+        <!--.on("mouseover", function(d){-->
+
+        	<!--d3.select(this).transition().duration(200).style("fill", "#d30715");-->
+
+          <!--svg.selectAll("#tooltip").data([d]).enter().append("text")-->
+            <!--.attr("id", "tooltip")-->
+            <!--.text(function(d, i) { return d.Position; })-->
+            <!--.attr("y", function(d) {return y(d.Position) - 12})-->
+            <!--.attr("x", function(d) { return x(d.Year); })-->
+
+         <!--svg.selectAll("#tooltip_path").data([d]).enter().append("line")-->
+            <!--.attr("id", "tooltip_path")-->
+            <!--.attr("class", "line")-->
+            <!--.attr("d", valueline)-->
+            <!--.attr("x1", function(d) {return x(d.Year)})-->
+            <!--.attr("x2", function(d) {return x(d.Year)})-->
+            <!--.attr("y1", height)-->
+            <!--.attr("y2", function(d) {return y(d.Position)})-->
+            <!--.attr("stroke", "black")-->
+            <!--.style("stroke-dasharray", ("3, 3"));-->
+        <!--})-->
+ <!--var focus = svg.append("g")-->
+        <!--.attr("class", "focus")-->
+        <!--.style("display", "none");-->
+
+  <!--function mouseover(){-->
+        <!--div.style('display', 'inline')-->
+        <!--div.style("fill", "orangered");-->
+  <!--}-->
+  <!--function mousemove(){-->
+        <!--var d = d3.select(this).data()-->
+        <!--div-->
+            <!--.html(d.Position)-->
+            <!--.style('left', (d3.event.pageX - 34) + 'px')-->
+            <!--.style('top', (d3.event.pageY - 12) + 'px')-->
+            <!--.style("fill", "orangered");-->
+    <!--}-->
+    <!--&lt;!&ndash;+'<hr>'+  d.data.spaces +'<hr>'+ d.data.area)&ndash;&gt;-->
+  <!--function mouseout(){-->
+        <!--div.style('display', 'none')-->
+        <!--div.style("fill", "orangered");-->
+        <!--}-->
+
+
+});
+
+</script>
+</body>

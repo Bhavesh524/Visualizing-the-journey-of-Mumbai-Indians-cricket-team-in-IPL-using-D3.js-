@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Pie Charts</title>
+
+       .arc text {
+  font: 10px sans-serif;
+  text-anchor: middle;
+}
+
+.arc path {
+  stroke: #fff;
+}
+
+.arc2 text {
+  font: 10px sans-serif;
+  text-anchor: middle;
+}
+
+.arc2 path {
+  stroke: #fff;
+    }
+
+.bar:hover {
+    fill: orangered ;
+    }
+ .tooltip{
+      position      : absolute;
+      text-align    : center;
+      max-width     : 100px;
+      max-height    : 150px;
+      padding       : 8px;
+      border        : none;
+      border-radius : 8px;
+      margin-top    : -30px;
+      font          : 10px sans-serif;
+      background    : black;
+      color         : white;
+      pointer-events: none;
+  }
+        <!-- Load D3 -->
+        <script src="//d3js.org/d3.v4.min.js" charset="utf-8"></script>
+
+
+
+
+    </head>
+    <body>
+    <div id='container'></div>
+
+        <script>
+            // margin
+var margin = {top: 20, right: 20, bottom: 20, left: 20},
+    width = 500 - margin.right - margin.left,
+    height = 500 - margin.top - margin.bottom,
+    radius = width/2;
+
+// color range
+var color = d3.scaleOrdinal()
+    .range(["#BBDEFB", "#90CAF9", "#64B5F6", "#42A5F5", "#2196F3", "#1E88E5", "#1976D2"]);
+
+        // tooltips
+var div = d3.select('#container').append('div')
+           .attr('class', 'tooltip')
+           .style('display', 'none')
+           .style("fill", "orangered");
+
+
+// pie chart arc. Need to create arcs before generating pie
+var arc = d3.arc()
+    .outerRadius(radius - 10)
+    .innerRadius(0);
+
+// donut chart arc
+var arc2 = d3.arc()
+    .outerRadius(radius - 10)
+    .innerRadius(radius - 70);
+
+// arc for the labels position
+var labelArc = d3.arc()
+    .outerRadius(radius - 40)
+    .innerRadius(radius - 40);
+
+// generate pie chart and donut chart
+var pie = d3.pie()
+    .sort(null)
+    .value(function(d) { return d.runs_s1; });
+
+// define the svg for pie chart
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+  .append("g")
+    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+// define the svg donut chart
+var svg2 = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+  .append("g")
+    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+ var sums_data = []
+// import data
+    d3.csv("data/sum.csv", function(error, sumsdata) {
+    //print(parkdata)
+    console.log(sumsdata)
+    var obj = new Array();
+    for (i in sumsdata) {
+        var obj = {};
+        obj.Year = sumsdata[i].Year;
+        obj.runs_s1 = sumsdata[i].runs_s1;
+        obj.wickets_s1 = sumsdata[i].wickets_s1;
+        obj.Position = sumsdata[i].Position;
+        obj.Coach = sumsdata[i].Coach;
+        sums_data.push(obj);
+          }
+
+  // "g element is a container used to group other SVG elements"
+  var g = svg.selectAll(".arc")
+      .data(pie(sums_data))
+    .enter().append("g")
+      .attr("class", "arc");
+
+  // append path
+  g.append("path")
+      .attr("d", arc)
+      .style("fill", function(d) { return color(d.data.Year); })
+    // transition
+    .transition()
+      .ease(d3.easeLinear)
+      .duration(2000)
+      .attrTween("d", tweenPie);
+
+  // append text
+  g.append("text")
+    .transition()
+      .ease(d3.easeLinear)
+      .duration(2000)
+    .attr("transform", function(d) { return "translate(" + labelArc.centroid(d) + ")"; })
+      .attr("dy", ".35em")
+      .text(function(d) { return d.data.Year; });
+
+
+    // "g element is a container used to group other SVG elements"
+  var g2 = svg2.selectAll(".arc2")
+      .data(pie(sums_data))
+    .enter().append("g")
+      .attr("class", "arc2")
+      .on('mouseover', mouseover)
+      .on('mousemove', mousemove)
+      .on('mouseout', mouseout);
+
+   // append path
+  g2.append("path")
+      .attr("d", arc2)
+      .style("fill", function(d) { return color(d.data.Year); })
+    .transition()
+      .ease(d3.easeLinear)
+      .duration(2000)
+      .attrTween("d", tweenDonut);
+
+   // append text
+  g2.append("text")
+    .transition()
+      .ease(d3.easeLinear)
+      .duration(2000)
+    .attr("transform", function(d) { return "translate(" + labelArc.centroid(d) + ")"; })
+      .attr("dy", ".35em")
+      .text(function(d) { return d.data.Year; });
+
+});
+
+// Helper function for animation of pie chart and donut chart
+function tweenPie(b) {
+  b.innerRadius = 0;
+  var i = d3.interpolate({startAngle: 0, endAngle: 0}, b);
+  return function(t) { return arc(i(t)); };
+}
+
+function tweenDonut(b) {
+  b.innerRadius = 0;
+  var i = d3.interpolate({startAngle: 0, endAngle: 0}, b);
+  return function(t) { return arc2(i(t)); };
+}
+
+  function mouseover(){
+        div.style('display', 'inline')
+        div.style("fill", "orangered");
+  }
+  function mousemove(){
+        var d = d3.select(this).data()[0]
+        div
+            .html(d.data.Year +'<hr>'+  d.data.runs_s1 +'<hr>'+ d.data.Position)
+            .style('left', (d3.event.pageX - 34) + 'px')
+            .style('top', (d3.event.pageY - 12) + 'px')
+            .style("fill", "orangered");
+    }
+  function mouseout(){
+        div.style('display', 'none')
+        div.style("fill", "orangered");
+        }
+
+
+
+        </script>
+
+
+    </body>
+
+</html>

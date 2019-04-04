@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="http://d3js.org/d3.v4.js"></script>
+
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+<script>
+
+// set the dimensions and margins of the graph
+var margin = {top: 10, right: 30, bottom: 30, left: 50},
+    width = 460 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+
+// append the svg object to the body of the page
+var svg = d3.select("#my_dataviz")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+/* Data in strings like it would be if imported from a csv */
+ var record_data = []
+
+    d3.csv("data/MI_record.csv", function(error, recorddata) {
+    //print(parkdata)
+    console.log(recorddata)
+    var obj = new Array();
+    for (i in recorddata) {
+        var obj = {};
+        obj.Year = recorddata[i].Year;
+        obj.Total = recorddata[i].Total;
+        obj.Wins = recorddata[i].Wins;
+        obj.Losses = recorddata[i].Losses;
+        obj.NR = recorddata[i].NR;
+        obj.percent_win = recorddata[i].percent_win;
+        obj.Position = recorddata[i].Position;
+        record_data.push(obj);
+          }
+
+  // Now I can use this dataset:
+  function(record_data) {
+
+    // Add X axis --> it is a date format
+    var x = d3.scaleTime()
+      .domain(d3.extent(data, function(d) { return d.Year; }))
+      .range([ 0, width ]);
+    svg.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+
+    // Add Y axis
+    var y = d3.scaleLinear()
+      .domain([d3.max(data, function(d) { return +d.Position; }), 0])
+      .range([ height, 0 ]);
+    svg.append("g")
+      .call(d3.axisLeft(y));
+
+    // Add the area
+    svg.append("path")
+      .datum(record_data)
+      .attr("fill", "#cce5df")
+      .attr("stroke", "#69b3a2")
+      .attr("stroke-width", 1.5)
+      .attr("d", d3.area()
+        .x(function(d) { return x(d.Year) })
+        .y0(y(0))
+        .y1(function(d) { return y(d.Position) })
+
+}
+})
+
+</script>
